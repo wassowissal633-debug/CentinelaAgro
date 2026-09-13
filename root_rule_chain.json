@@ -1,0 +1,399 @@
+{
+  "ruleChain": {
+    "name": "Root Rule Chain",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null,
+    "additionalInfo": null
+  },
+  "metadata": {
+    "version": 30,
+    "firstNodeIndex": 5,
+    "nodes": [
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgAttributesNode",
+        "name": "Save Attributes",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 3,
+        "configuration": {
+          "processingSettings": {
+            "attributes": {
+              "type": "ON_EVERY_MESSAGE"
+            },
+            "webSockets": {
+              "type": "ON_EVERY_MESSAGE"
+            },
+            "calculatedFields": {
+              "type": "ON_EVERY_MESSAGE"
+            },
+            "type": "ADVANCED"
+          },
+          "scope": "SHARED_SCOPE",
+          "notifyDevice": false,
+          "sendAttributesUpdatedNotification": true,
+          "updateAttributesOnlyOnValueChange": true
+        },
+        "additionalInfo": {
+          "description": null,
+          "layoutX": 959,
+          "layoutY": 343
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeSwitchNode",
+        "name": "Message Type Switch",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "version": 0
+        },
+        "additionalInfo": {
+          "layoutX": 460,
+          "layoutY": 225
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbLogNode",
+        "name": "Log RPC from Device",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);",
+          "tbelScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);"
+        },
+        "additionalInfo": {
+          "layoutX": 973,
+          "layoutY": 109
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbLogNode",
+        "name": "Log Other",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);",
+          "tbelScript": "return '\\nIncoming message:\\n' + JSON.stringify(msg) + '\\nIncoming metadata:\\n' + JSON.stringify(metadata);"
+        },
+        "additionalInfo": {
+          "layoutX": 959,
+          "layoutY": 251
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "RPC Call Request",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "timeoutInSeconds": 28
+        },
+        "additionalInfo": {
+          "description": null,
+          "layoutX": 968,
+          "layoutY": 183
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbOriginatorTypeFilterNode",
+        "name": "Is Entity Group",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "originatorTypes": [
+            "ENTITY_GROUP"
+          ]
+        },
+        "additionalInfo": {
+          "layoutX": 135,
+          "layoutY": 239
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode",
+        "name": "Post attributes or RPC request",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "messageTypes": [
+            "POST_ATTRIBUTES_REQUEST",
+            "RPC_CALL_FROM_SERVER_TO_DEVICE"
+          ]
+        },
+        "additionalInfo": {
+          "layoutX": 452,
+          "layoutY": 65
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbDuplicateMsgToGroupNode",
+        "name": "Duplicate To Group Entities",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "entityGroupId": null,
+          "entityGroupIsMessageOriginator": true
+        },
+        "additionalInfo": {
+          "layoutX": 741,
+          "layoutY": 42
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "script",
+        "debugSettings": {
+          "failuresEnabled": false,
+          "allEnabled": false,
+          "allEnabledUntil": 1788373677791
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "var soil = parseFloat(msg.soil_moisture);\r\nvar gas = parseFloat(msg.gas_ppm);\r\n\r\nvar status = 'healthy';\r\nvar action = 'none';\r\nvar hoursToCritical = null;\r\n\r\n// قراءة القيمة السابقة بأمان دون التسبب في إيقاف السكريبت\r\nvar prevSoil = null;\r\nif (metadata && metadata.ss_prev_soil_moisture && metadata.ss_prev_soil_moisture !== 'undefined') {\r\n    var parsed = parseFloat(metadata.ss_prev_soil_moisture);\r\n    if (!isNaN(parsed)) {\r\n        prevSoil = parsed;\r\n    }\r\n}\r\n\r\n// حساب الاتجاه والتنبؤ عند توفر القيمة السابقة فقط\r\nif (!isNaN(soil) && prevSoil !== null) {\r\n    var dropRate = prevSoil - soil;\r\n    if (dropRate > 0) {\r\n        var distanceToCritical = soil - 20;\r\n        if (distanceToCritical > 0) {\r\n            hoursToCritical = parseFloat((distanceToCritical / dropRate).toFixed(1));\r\n        } else {\r\n            hoursToCritical = 0;\r\n        }\r\n    }\r\n}\r\n\r\n// تحديث الحالة والعمليات المطلوب تنفيذها\r\nif (!isNaN(soil)) {\r\n    if (soil < 20) {\r\n        status = 'critical';\r\n        action = 'irrigate_now';\r\n    } else if (soil < 35 || (hoursToCritical !== null && hoursToCritical < 2)) {\r\n        status = 'at_risk';\r\n        action = 'irrigate_soon';\r\n    }\r\n}\r\n\r\nif (!isNaN(gas) && gas > 300) {\r\n    status = 'critical';\r\n    action = 'ventilate_or_check';\r\n}\r\n\r\n// حفظ القيمة الحالية للمرة القادمة\r\nif (!isNaN(soil)) {\r\n    metadata.ss_prev_soil_moisture = soil.toString();\r\n}\r\n\r\n// إسناد البيانات للرسالة\r\nmsg.status = status;\r\nmsg.action = action;\r\nif (hoursToCritical !== null) {\r\n    msg.hours_to_critical = hoursToCritical;\r\n}\r\n\r\nreturn {\r\n    msg: msg,\r\n    metadata: metadata,\r\n    msgType: msgType\r\n};",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 127,
+          "layoutY": 475
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgTimeseriesNode",
+        "name": "save",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "processingSettings": {
+            "type": "ON_EVERY_MESSAGE"
+          },
+          "defaultTTL": 0,
+          "useServerTs": true
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 489,
+          "layoutY": 424
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "detect risk",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "// التثبت من وجود متغيرات الحالة والأمر داخل الرسالة\r\nif (msg && (msg.status === 'critical' || msg.status === 'at_risk' || msg.action === 'irrigate_now')) {\r\n    return true; // يمر إلى مسار True -> Create Alarm\r\n}\r\n\r\nreturn false; // يمر إلى مسار False -> Clear Alarm",
+          "tbelScript": "return msg.temperature > 20;"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 453,
+          "layoutY": 526
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "create alarm",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    delete metadata.prevAlarmDetails;\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    metadata.remove('prevAlarmDetails');\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "Crop Risk Detected",
+          "severity": "CRITICAL",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToOwnerHierarchy": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 752,
+          "layoutY": 479
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbClearAlarmNode",
+        "name": "clear alarm",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    delete metadata.prevAlarmDetails;\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    metadata.remove('prevAlarmDetails');\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;",
+          "alarmType": "Crop Risk Detected"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 741,
+          "layoutY": 571
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "To Shared Attr",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return {msg: msg, metadata: metadata, msgType: msgType};",
+          "tbelScript": "return {\r\n    msg: {\r\n        action: msg.action,\r\n        status: msg.status\r\n    },\r\n    metadata: metadata,\r\n    msgType: \"POST_ATTRIBUTES_REQUEST\"\r\n};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1083,
+          "layoutY": 458
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgAttributesNode",
+        "name": "save attribute",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 3,
+        "configuration": {
+          "processingSettings": {
+            "type": "ON_EVERY_MESSAGE"
+          },
+          "scope": "SHARED_SCOPE",
+          "notifyDevice": false,
+          "sendAttributesUpdatedNotification": false,
+          "updateAttributesOnlyOnValueChange": false
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1171,
+          "layoutY": 562
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 1,
+        "toIndex": 0,
+        "type": "Post attributes"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "RPC Request from Device"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 3,
+        "type": "Other"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 4,
+        "type": "RPC Request to Device"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 8,
+        "type": "Post telemetry"
+      },
+      {
+        "fromIndex": 5,
+        "toIndex": 1,
+        "type": "False"
+      },
+      {
+        "fromIndex": 5,
+        "toIndex": 6,
+        "type": "True"
+      },
+      {
+        "fromIndex": 6,
+        "toIndex": 1,
+        "type": "False"
+      },
+      {
+        "fromIndex": 6,
+        "toIndex": 7,
+        "type": "True"
+      },
+      {
+        "fromIndex": 7,
+        "toIndex": 1,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 8,
+        "toIndex": 9,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 8,
+        "toIndex": 10,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 10,
+        "toIndex": 11,
+        "type": "True"
+      },
+      {
+        "fromIndex": 10,
+        "toIndex": 12,
+        "type": "False"
+      },
+      {
+        "fromIndex": 11,
+        "toIndex": 13,
+        "type": "Created"
+      },
+      {
+        "fromIndex": 12,
+        "toIndex": 13,
+        "type": "Cleared"
+      },
+      {
+        "fromIndex": 13,
+        "toIndex": 14,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}
