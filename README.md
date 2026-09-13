@@ -4,7 +4,6 @@
 
 CentinelaAgro is a closed-loop IoT irrigation system built on the ESP32-S3. Instead of watering on a fixed schedule, it analyzes soil moisture trends in real time and predicts when conditions will become critical — then acts before the plant actually suffers.
 
-![Dashboard Overview](docs/dashboard-overview.png)
 
 ## How It Works
 
